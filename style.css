@@ -63,6 +63,7 @@ body {
   color: var(--color-dark);
 }
 
+/* Layout principal com 3 colunas: sidebar + main + right */
 .container {
   display: grid;
   width: 96%;
