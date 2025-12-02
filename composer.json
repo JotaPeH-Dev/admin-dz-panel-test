@@ -1,12 +1,5 @@
 {
-  "name": "chaconlucas/admin-dz",
-  "description": "Sistema de Dashboard Admin com PHP e MySQL",
-  "type": "project",
   "require": {
-    "php": "^8.0",
-    "ext-mysqli": "*"
-  },
-  "scripts": {
-    "start": "php -S 0.0.0.0:$PORT -t ."
+    "php": "^8.0"
   }
 }
