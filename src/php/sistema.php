@@ -5,18 +5,14 @@
  */
 
 // =================== CONFIGURAÇÕES GLOBAIS ===================
-define('GROQ_API_KEY', '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');
+// Carrega configurações
+require_once __DIR__ . '/../../config/config.php';
+
 define('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions');
 define('GROQ_MODEL', 'llama-3.3-70b-versatile');
 define('GROQ_TEMPERATURE', 0.7);
 define('GROQ_MAX_TOKENS', 1000);
 define('SISTEMA_PROMPT', 'Você é um assistente de atendimento ao cliente da empresa D&Z. Seja prestativo, educado e objetivo. Tente resolver as dúvidas dos clientes da melhor forma possível. Se não conseguir resolver completamente, sugira que o cliente fale com um atendente humano. Sempre responda em português brasileiro de forma amigável e profissional. Mantenha as respostas concisas e úteis. Não mencione que você é uma IA, apenas ajude como um atendente da empresa.');
-
-// Configurações do banco
-define('DB_HOST', '127.0.0.1');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'teste_dz');
 
 // =================== CONEXÃO BANCO ===================
 $conexao = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);

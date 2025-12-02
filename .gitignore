@@ -1,0 +1,19 @@
+# Arquivos sensíveis
+.env
+config.php
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+error_log
+
+# Cache
+cache/
+*.cache
