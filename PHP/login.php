@@ -3,7 +3,7 @@ session_start();
 
 // Se já estiver logado, redireciona para o dashboard
 if (isset($_SESSION['usuario_logado'])) {
-    header('Location: ../index.php');
+    header('Location: ../src/php/dashboard/index.php');
     exit();
 }
 ?>
@@ -14,7 +14,7 @@ if (isset($_SESSION['usuario_logado'])) {
     <title>Login D&Z</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/png" href="../images/logodz.png" />
+    <link rel="icon" type="image/png" href="../assets/images/logodz.png" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -89,7 +89,7 @@ if (isset($_SESSION['usuario_logado'])) {
 </head>
 <body>
     <div class="login-container">
-        <img src="../images/logodz.png" alt="D&Z Logo" class="login-logo" />
+        <img src="../assets/images/logodz.png" alt="D&Z Logo" class="login-logo" />
         
         <h2 class="login-title">Login</h2>
         

@@ -2,16 +2,18 @@
 session_start();
 // Verificar se está logado
 if (!isset($_SESSION['usuario_logado'])) {
-    header('Location: PHP/login.php');
-    exit();
-}
+    header('Location: ../../../PHP/login.php');
+    exit();}
+
+// Incluir contador de mensagens
+require_once 'helper-contador.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
 
      <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp"
@@ -26,7 +28,7 @@ if (!isset($_SESSION['usuario_logado'])) {
       <aside>
         <div class="top">
           <div class="logo">
-            <img src="images/Logodz.png" />
+            <img src="../../../assets/images/Logodz.png" />
                         <a href="index.php"><h2 class="danger">D&Z</h2></a>
 
           </div>
@@ -60,7 +62,7 @@ if (!isset($_SESSION['usuario_logado'])) {
           <a href="menssage.php">
             <span class="material-symbols-sharp">Mail</span>
             <h3>Mensagens</h3>
-            <span class="message-count">26</span>
+            <span class="message-count"><?php echo $nao_lidas; ?></span>
           </a>
 
           <a href="products.php">
@@ -83,7 +85,7 @@ if (!isset($_SESSION['usuario_logado'])) {
             <h3>Adicionar Produto</h3>
           </a>
 
-          <a href="PHP/logout.php">
+          <a href="../../../PHP/logout.php">
             <span class="material-symbols-sharp">Logout</span>
             <h3>Sair</h3>
           </a>
@@ -92,14 +94,14 @@ if (!isset($_SESSION['usuario_logado'])) {
 
       <!----------FINAL ASIDE------------>
       <main>
-        <h1>Mensagens</h1>
+        <h1>Produtos</h1>
         <div class="date">
           <input type="date" />
         </div>
         
         <div class="insights">
-          <p>Aqui serão exibidas as mensagens e notificações.</p>
-          <!-- Adicione o conteúdo específico da página de mensagens aqui -->
+          <p>Aqui será exibida a lista de produtos e seu estoque.</p>
+          <!-- Adicione o conteúdo específico da página de produtos aqui -->
         </div>
       </main>
 
@@ -115,10 +117,10 @@ if (!isset($_SESSION['usuario_logado'])) {
           <div class="profile">
             <div class="info">
               <p>Olá, <b><?= isset($_SESSION['usuario_nome']) ? $_SESSION['usuario_nome'] : 'Usuário'; ?></b></p>
-              <small class="text-muted">Admnin</small>
+              <small class="text-muted">Admin</small>
             </div>
             <div class="profile-photo">
-              <img src="images/logo.png" alt="" />
+              <img src="../../../assets/images/logo.png" alt="" />
             </div>
           </div>
         </div>
@@ -127,7 +129,15 @@ if (!isset($_SESSION['usuario_logado'])) {
 
 
     
-<script src="index.js"></script>
+<script src="../../js/dashboard.js"></script>
  </body>
 </html>
+
+
+
+
+
+
+
+
 

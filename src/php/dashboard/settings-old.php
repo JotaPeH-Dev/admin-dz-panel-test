@@ -1,11 +1,17 @@
 <?php
 session_start();
-require 'PHP/conexao.php';
+require_once '../sistema.php';
 // Verificar se está logado
 if (!isset($_SESSION['usuario_logado'])) {
-    header('Location: PHP/login.php');
+    header('Location: ../../../PHP/login.php');
     exit();
 }
+
+// Incluir contador de mensagens
+require_once 'helper-contador.php';
+
+// Declarar conexão global
+global $conexao;
 
 // Processar ações CRUD
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -79,7 +85,7 @@ $usuarios = mysqli_query($conexao, $sql);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
 
      <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp"
@@ -94,7 +100,7 @@ $usuarios = mysqli_query($conexao, $sql);
       <aside>
         <div class="top">
           <div class="logo">
-            <img src="images/Logodz.png" />
+            <img src="../../../assets/images/Logodz.png" />
                         <a href="index.php"><h2 class="danger">D&Z</h2></a>
 
           </div>
@@ -128,7 +134,7 @@ $usuarios = mysqli_query($conexao, $sql);
           <a href="menssage.php">
             <span class="material-symbols-sharp">Mail</span>
             <h3>Mensagens</h3>
-            <span class="message-count">26</span>
+            <span class="message-count"><?php echo $nao_lidas; ?></span>
           </a>
 
           <a href="products.php">
@@ -151,7 +157,7 @@ $usuarios = mysqli_query($conexao, $sql);
             <h3>Adicionar Produto</h3>
           </a>
 
-          <a href="PHP/logout.php">
+          <a href="../../../PHP/logout.php">
             <span class="material-symbols-sharp">Logout</span>
             <h3>Sair</h3>
           </a>
@@ -183,10 +189,10 @@ $usuarios = mysqli_query($conexao, $sql);
           <div class="profile">
             <div class="info">
               <p>Olá, <b><?= isset($_SESSION['usuario_nome']) ? $_SESSION['usuario_nome'] : 'Usuário'; ?></b></p>
-              <small class="text-muted">Admnin</small>
+              <small class="text-muted">Admin</small>
             </div>
             <div class="profile-photo">
-              <img src="images/logo.png" alt="" />
+              <img src="../../../assets/images/logo.png" alt="" />
             </div>
           </div>
         </div>
@@ -195,7 +201,14 @@ $usuarios = mysqli_query($conexao, $sql);
 
 
     
-<script src="index.js"></script>
+<script src="../../js/dashboard.js"></script>
  </body>
 </html>
+
+
+
+
+
+
+
 

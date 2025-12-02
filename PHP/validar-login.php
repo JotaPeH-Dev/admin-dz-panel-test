@@ -38,7 +38,7 @@ if (isset($_POST['btn_login'])) {
             }
             
             $_SESSION['mensagem'] = 'Login realizado com sucesso! Bem-vindo, ' . $usuario['nome'];
-            header('Location: ../index.php');
+            header('Location: ../src/php/dashboard/index.php');
             exit();
         } else {
             $_SESSION['mensagem'] = 'Senha incorreta.';
