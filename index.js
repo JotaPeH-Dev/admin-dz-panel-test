@@ -27,6 +27,7 @@ themeToggler.addEventListener("click", () => {
 // Restore persisted theme on load
 document.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("darkTheme");
+
   if (saved === "true") {
     document.body.classList.add("dark-theme-variables");
     const s = themeToggler.querySelector("span:nth-child(1)");
