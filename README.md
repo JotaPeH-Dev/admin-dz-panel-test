@@ -45,8 +45,7 @@ CREATE TABLE teste_dz (
 
 ## 👤 Usuários padrão
 
-- **Admin**: admin@teste.com / Senha: 123456
-- **User**: usuario@teste.com / Senha: senha123
+- **Admin**: admin@teste.com / Senha: admin123
 
 ## 📱 Páginas
 

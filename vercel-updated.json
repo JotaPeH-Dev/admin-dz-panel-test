@@ -1,0 +1,31 @@
+{
+  "functions": {
+    "api/login.php": {
+      "runtime": "vercel-php@0.6.0"
+    },
+    "api/auth.php": {
+      "runtime": "vercel-php@0.6.0"
+    },
+    "api/logout.php": {
+      "runtime": "vercel-php@0.6.0"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/api/login.php"
+    },
+    {
+      "source": "/auth",
+      "destination": "/api/auth.php"
+    },
+    {
+      "source": "/logout",
+      "destination": "/api/logout.php"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ]
+}
