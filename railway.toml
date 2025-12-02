@@ -1,0 +1,7 @@
+[deploy]
+startCommand = "php -S 0.0.0.0:$PORT router.php"
+healthcheckPath = "/index.php"
+
+[build]
+builder = "heroku/buildpacks:20"
+buildpacks = ["heroku/php"]
