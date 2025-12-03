@@ -576,18 +576,34 @@ try {
               month: '2-digit'
             });
             
-            messageDiv.innerHTML = `
-              <div class="message-avatar">${avatarLetter}</div>
-              <div class="message-wrapper">
-                <div class="message-header">
-                  <span class="message-sender">${remetente}</span>
-                  <span class="message-time">${timestamp}</span>
+            // Estrutura diferente para admin/IA (avatar à direita) vs cliente (avatar à esquerda)
+            if (msg.remetente === 'admin' || msg.remetente === 'ia') {
+              messageDiv.innerHTML = `
+                <div class="message-wrapper">
+                  <div class="message-header">
+                    <span class="message-sender">${remetente}</span>
+                    <span class="message-time">${timestamp}</span>
+                  </div>
+                  <div class="message-content">
+                    <div class="message-text">${msg.conteudo}</div>
+                  </div>
                 </div>
-                <div class="message-content">
-                  <div class="message-text">${msg.conteudo}</div>
+                <div class="message-avatar">${avatarLetter}</div>
+              `;
+            } else {
+              messageDiv.innerHTML = `
+                <div class="message-avatar">${avatarLetter}</div>
+                <div class="message-wrapper">
+                  <div class="message-header">
+                    <span class="message-sender">${remetente}</span>
+                    <span class="message-time">${timestamp}</span>
+                  </div>
+                  <div class="message-content">
+                    <div class="message-text">${msg.conteudo}</div>
+                  </div>
                 </div>
-              </div>
-            `;
+              `;
+            }
             
             container.appendChild(messageDiv);
           });
