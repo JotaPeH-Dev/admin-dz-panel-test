@@ -563,36 +563,33 @@ try {
           container.innerHTML = '';
           
           mensagens.forEach(msg => {
-            const div = document.createElement('div');
-            div.style.marginBottom = '1rem';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble ${msg.remetente === 'usuario' ? 'client' : (msg.remetente === 'admin' ? 'admin' : 'ia')}`;
             
             const remetente = msg.remetente === 'usuario' ? 'Cliente' : 
-                             msg.remetente === 'admin' ? 'Admin' : 'IA';
-            const cor = msg.remetente === 'usuario' ? 'var(--color-danger)' :
-                       msg.remetente === 'admin' ? '#ff6b9d' : '#ffccf9';
-            const bgCor = msg.remetente === 'usuario' ? '#fff5f5' :
-                         msg.remetente === 'admin' ? '#f0fff0' : '#fafafe';
+                             msg.remetente === 'admin' ? 'Admin' : 'IA Assistant';
+            const avatarLetter = remetente.charAt(0);
+            const timestamp = new Date(msg.timestamp).toLocaleString('pt-BR', {
+              hour: '2-digit', 
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit'
+            });
             
-            div.innerHTML = `
-              <div style="display: flex; align-items: flex-start; margin-bottom: 1rem; ${msg.remetente === 'admin' ? 'justify-content: flex-end;' : ''}">
-                <div style="max-width: 70%; ${msg.remetente === 'admin' ? 'order: 2;' : ''}">
-                  <div style="display: flex; ${msg.remetente === 'admin' ? 'justify-content: flex-end;' : 'justify-content: flex-start'} align-items: center; margin-bottom: 0.3rem;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: ${cor}; color: white; display: flex; align-items: center; justify-content: center; margin: ${msg.remetente === 'admin' ? '0 0 0 0.5rem' : '0 0.5rem 0 0'}; font-size: 0.75rem; font-weight: bold;">
-                      ${remetente.charAt(0)}
-                    </div>
-                    <div>
-                      <strong style="font-size: 0.85rem; color: ${cor};">${remetente}</strong>
-                      <div><small style="color: var(--color-dark-variant); font-size: 0.7rem;">${new Date(msg.timestamp).toLocaleString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</small></div>
-                    </div>
-                  </div>
-                  <div style="background: ${bgCor}; padding: 1rem; border-radius: 12px; border: 1px solid ${cor}20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1.4; color: var(--color-dark);">
-                    ${msg.conteudo}
-                  </div>
+            messageDiv.innerHTML = `
+              <div class="message-avatar">${avatarLetter}</div>
+              <div class="message-wrapper">
+                <div class="message-header">
+                  <span class="message-sender">${remetente}</span>
+                  <span class="message-time">${timestamp}</span>
+                </div>
+                <div class="message-content">
+                  <div class="message-text">${msg.conteudo}</div>
                 </div>
               </div>
             `;
             
-            container.appendChild(div);
+            container.appendChild(messageDiv);
           });
           
           container.scrollTop = container.scrollHeight;
