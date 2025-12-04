@@ -99,6 +99,7 @@ class ChatManager {
     
     public function obterConversas($status = null) {
         $sql = "SELECT c.*, 
+                       COALESCE(NULLIF(c.usuario_nome, ''), CONCAT('Cliente #', c.id)) as usuario_nome,
                        (SELECT conteudo FROM mensagens WHERE conversa_id = c.id ORDER BY timestamp DESC LIMIT 1) as ultima_mensagem,
                        (SELECT COUNT(*) FROM mensagens WHERE conversa_id = c.id AND lida = FALSE AND remetente != 'admin') as nao_lidas,
                        (SELECT COUNT(*) FROM mensagens WHERE conversa_id = c.id) as total_mensagens
@@ -118,11 +119,29 @@ class ChatManager {
     }
     
     public function obterMensagens($conversa_id) {
-        $sql = "SELECT * FROM mensagens WHERE conversa_id = ? ORDER BY timestamp ASC";
-        $stmt = $this->conexao->prepare($sql);
-        $stmt->bind_param("i", $conversa_id);
-        $stmt->execute();
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        // Tentar com remetente_nome primeiro, se falhar usar query simples
+        try {
+            $sql = "SELECT *, COALESCE(remetente_nome, 
+                           CASE 
+                               WHEN remetente = 'admin' THEN 'Admin'
+                               WHEN remetente = 'ia' THEN 'DAIze'
+                               ELSE 'Cliente'
+                           END) as nome_remetente 
+                    FROM mensagens 
+                    WHERE conversa_id = ? 
+                    ORDER BY timestamp ASC";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bind_param("i", $conversa_id);
+            $stmt->execute();
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            // Fallback se a coluna remetente_nome não existe
+            $sql = "SELECT * FROM mensagens WHERE conversa_id = ? ORDER BY timestamp ASC";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bind_param("i", $conversa_id);
+            $stmt->execute();
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        }
     }
     
     public function processarMensagemUsuario($conversa_id, $mensagem) {
@@ -164,11 +183,33 @@ class ChatManager {
         return $contexto;
     }
     
-    public function enviarMensagemAdmin($conversa_id, $mensagem, $admin_id) {
-        $sql = "INSERT INTO mensagens (conversa_id, remetente, conteudo) VALUES (?, 'admin', ?)";
-        $stmt = $this->conexao->prepare($sql);
-        $stmt->bind_param("is", $conversa_id, $mensagem);
-        return $stmt->execute();
+    public function enviarMensagemAdmin($conversa_id, $mensagem, $admin_id, $admin_nome = null) {
+        // Se não foi fornecido nome, tenta usar da sessão
+        if (!$admin_nome && isset($_SESSION['usuario_nome'])) {
+            $admin_nome = $_SESSION['usuario_nome'];
+        }
+        
+        // Se ainda não tem nome, usa 'Admin' como fallback
+        $admin_nome = $admin_nome ?: 'Admin';
+        
+        /* 
+         * IMPORTANTE: Execute este SQL no seu banco de dados antes de usar:
+         * ALTER TABLE mensagens ADD COLUMN remetente_nome VARCHAR(255) NULL;
+         */
+        
+        // Tentar inserir com remetente_nome, se falhar usar método antigo
+        try {
+            $sql = "INSERT INTO mensagens (conversa_id, remetente, conteudo, remetente_nome) VALUES (?, 'admin', ?, ?)";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bind_param("iss", $conversa_id, $mensagem, $admin_nome);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            // Fallback se a coluna ainda não existe
+            $sql = "INSERT INTO mensagens (conversa_id, remetente, conteudo) VALUES (?, 'admin', ?)";
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bind_param("is", $conversa_id, $mensagem);
+            return $stmt->execute();
+        }
     }
     
     public function escalarParaHumano($conversa_id) {
@@ -330,6 +371,9 @@ function handleClientAPI($chat_manager, $action) {
                 $email = trim($input['email'] ?? '');
                 $mensagem = trim($input['mensagem'] ?? '');
                 
+                // Debug: log dos dados recebidos
+                error_log("API start_conversation - Nome: '$nome', Email: '$email'");
+                
                 if (!$nome || !$email || !$mensagem) {
                     echo json_encode(['success' => false, 'error' => 'Por favor, preencha todos os campos']);
                     exit;
@@ -441,7 +485,8 @@ function handleAdminAPI($chat_manager, $action) {
                     exit;
                 }
                 
-                $resultado = $chat_manager->enviarMensagemAdmin($conversa_id, $mensagem, $admin_id);
+                $admin_nome = $_SESSION['usuario_nome'] ?? 'Admin';
+                $resultado = $chat_manager->enviarMensagemAdmin($conversa_id, $mensagem, $admin_id, $admin_nome);
                 echo json_encode(['success' => $resultado]);
                 break;
                 

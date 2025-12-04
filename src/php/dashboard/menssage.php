@@ -187,11 +187,11 @@ try {
                          data-id="<?php echo $conversa['id']; ?>"
                          data-status="<?php echo $conversa['status']; ?>"
                          data-nao-lidas="<?php echo $conversa['nao_lidas']; ?>"
-                         onclick="selecionarConversa(<?php echo $conversa['id']; ?>, '<?php echo htmlspecialchars($conversa['usuario_nome']); ?>')">
+                         onclick="selecionarConversa(<?php echo $conversa['id']; ?>, '<?php echo htmlspecialchars($conversa['usuario_nome'] ?: 'Cliente #' . $conversa['id']); ?>')">
                       
                       <div class="conversation-avatar">
                         <div class="avatar-circle">
-                          <?php echo strtoupper(substr($conversa['usuario_nome'], 0, 1)); ?>
+                          <?php echo strtoupper(substr($conversa['usuario_nome'] ?: 'Cliente', 0, 1)); ?>
                         </div>
                         <?php if($conversa['nao_lidas'] > 0): ?>
                           <div class="unread-indicator"></div>
@@ -199,26 +199,24 @@ try {
                       </div>
                       
                       <div class="conversation-content">
-                        <div class="conversation-header">
-                          <h4><?php echo htmlspecialchars($conversa['usuario_nome']); ?></h4>
-                          <span class="conversation-time"><?php echo date('H:i', strtotime($conversa['updated_at'] ?? 'now')); ?></span>
+                        <div class="conversation-main">
+                          <h4><?php echo htmlspecialchars($conversa['usuario_nome'] ?: 'Cliente #' . $conversa['id']); ?></h4>
+                          <p class="conversation-preview">
+                            <?php echo htmlspecialchars(substr($conversa['ultima_mensagem'] ?? 'Sem mensagens', 0, 40)); ?>...
+                          </p>
                         </div>
                         
-                        <p class="conversation-preview">
-                          <?php echo htmlspecialchars(substr($conversa['ultima_mensagem'] ?? 'Sem mensagens', 0, 50)); ?>...
-                        </p>
-                        
-                        <div class="conversation-footer">
+                        <div class="conversation-meta">
+                          <span class="conversation-time"><?php echo date('H:i', strtotime($conversa['updated_at'] ?? 'now')); ?></span>
                           <span class="status-badge status-<?php echo $conversa['status']; ?>">
                             <?php 
                             switch($conversa['status']) {
-                              case 'ativa': echo 'Ativa'; break;
-                              case 'aguardando_humano': echo 'Pendente'; break;
-                              case 'resolvida': echo 'Resolvida'; break;
+                              case 'ativa': echo 'ATIVA'; break;
+                              case 'aguardando_humano': echo 'PENDENTE'; break;
+                              case 'resolvida': echo 'RESOLVIDA'; break;
                             }
                             ?>
                           </span>
-                          
                           <?php if($conversa['nao_lidas'] > 0): ?>
                             <span class="unread-count"><?php echo $conversa['nao_lidas']; ?></span>
                           <?php endif; ?>
@@ -388,6 +386,8 @@ try {
     
     <script>
       let conversaAtiva = null;
+      let nomeClienteAtivo = null;
+      const nomeAdminLogado = '<?php echo addslashes($_SESSION['usuario_nome'] ?? 'Admin'); ?>';
       
       // Filtrar conversas (função corrigida para não quebrar event listeners)
       function filtrarConversas(status) {
@@ -430,36 +430,45 @@ try {
               mostrar = itemStatus === status;
           }
           
-          // Aplicar filtro com transição suave
+          // Aplicar filtro usando classes CSS para manter o layout
           if (mostrar) {
-            item.style.display = 'block';
-            item.style.opacity = '1';
-            item.style.transform = 'scale(1)';
+            // Remover todas as classes de filtro
+            item.classList.remove('filtered-hidden', 'animate-out', 'hide');
+            // Limpar estilos inline que possam interferir
+            item.style.display = '';
+            item.style.opacity = '';
+            item.style.transform = '';
+            
             // Re-adicionar event listeners se necessário
             if (!item.hasAttribute('data-listeners-added')) {
               item.setAttribute('data-listeners-added', 'true');
               
               // Restaurar hover effects
               item.addEventListener('mouseenter', function() {
-                if (!this.classList.contains('selected')) {
+                if (!this.classList.contains('selected') && !this.classList.contains('filtered-hidden')) {
                   this.style.transform = 'translateX(4px)';
                 }
               });
               
               item.addEventListener('mouseleave', function() {
-                if (!this.classList.contains('selected')) {
+                if (!this.classList.contains('selected') && !this.classList.contains('filtered-hidden')) {
                   this.style.transform = 'translateX(0)';
                 }
               });
             }
           } else {
-            item.style.opacity = '0.5';
-            item.style.transform = 'scale(0.95)';
+            // Usar classes CSS para esconder mantendo o flexbox
+            item.classList.add('filtered-hidden');
             setTimeout(() => {
-              if (item.style.opacity === '0.5') {
-                item.style.display = 'none';
+              if (item.classList.contains('filtered-hidden')) {
+                item.classList.add('animate-out');
+                setTimeout(() => {
+                  if (item.classList.contains('animate-out')) {
+                    item.classList.add('hide');
+                  }
+                }, 200);
               }
-            }, 200);
+            }, 50);
           }
         });
         
@@ -468,6 +477,8 @@ try {
       
       // Selecionar conversa (função otimizada com marcação imediata)
       function selecionarConversa(id, nome) {
+        // Garantir que sempre temos um nome válido
+        nome = nome || `Cliente #${id}`;
         console.log('🎯 Selecionando conversa:', id, nome);
         
         // Evitar reprocessamento desnecessário
@@ -477,6 +488,7 @@ try {
         }
         
         conversaAtiva = parseInt(id);
+        nomeClienteAtivo = nome; // Armazenar o nome do cliente ativo
         
         // PRIMEIRO: Marcar como lida IMEDIATAMENTE (antes mesmo de carregar mensagens)
         const conversaItem = document.querySelector(`[data-id="${id}"]`);
@@ -557,42 +569,81 @@ try {
         try {
           const url = `../sistema.php?api=1&endpoint=admin&action=get_messages&conversa_id=${conversaId}`;
           const response = await fetch(url);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
           const mensagens = await response.json();
+          console.log('Mensagens recebidas:', mensagens);
+          
+          // Verificar se é um array de mensagens
+          if (!Array.isArray(mensagens)) {
+            console.error('Resposta não é um array:', mensagens);
+            throw new Error('Formato de resposta inválido');
+          }
           
           const container = document.getElementById('mensagens-container');
           container.innerHTML = '';
           
           mensagens.forEach(msg => {
-            const div = document.createElement('div');
-            div.style.marginBottom = '1rem';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble ${msg.remetente === 'usuario' ? 'client' : (msg.remetente === 'admin' ? 'admin' : 'ia')}`;
             
-            const remetente = msg.remetente === 'usuario' ? 'Cliente' : 
-                             msg.remetente === 'admin' ? 'Admin' : 'IA';
-            const cor = msg.remetente === 'usuario' ? 'var(--color-danger)' :
-                       msg.remetente === 'admin' ? '#ff6b9d' : '#ffccf9';
-            const bgCor = msg.remetente === 'usuario' ? '#fff5f5' :
-                         msg.remetente === 'admin' ? '#f0fff0' : '#fafafe';
+            // Usar nome salvo no banco se disponível, senão fallback
+            const remetente = (msg.nome_remetente && msg.nome_remetente !== 'null') ? msg.nome_remetente : 
+                             (msg.remetente === 'usuario' ? (nomeClienteAtivo || 'Cliente') : 
+                              msg.remetente === 'admin' ? nomeAdminLogado : 'DAIze');
             
-            div.innerHTML = `
-              <div style="display: flex; align-items: flex-start; margin-bottom: 1rem; ${msg.remetente === 'admin' ? 'justify-content: flex-end;' : ''}">
-                <div style="max-width: 70%; ${msg.remetente === 'admin' ? 'order: 2;' : ''}">
-                  <div style="display: flex; ${msg.remetente === 'admin' ? 'justify-content: flex-end;' : 'justify-content: flex-start'} align-items: center; margin-bottom: 0.3rem;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: ${cor}; color: white; display: flex; align-items: center; justify-content: center; margin: ${msg.remetente === 'admin' ? '0 0 0 0.5rem' : '0 0.5rem 0 0'}; font-size: 0.75rem; font-weight: bold;">
-                      ${remetente.charAt(0)}
-                    </div>
-                    <div>
-                      <strong style="font-size: 0.85rem; color: ${cor};">${remetente}</strong>
-                      <div><small style="color: var(--color-dark-variant); font-size: 0.7rem;">${new Date(msg.timestamp).toLocaleString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</small></div>
-                    </div>
+            // Avatar especial para DAIze (logo da marca) ou letra normal
+            let avatarContent;
+            if (remetente === 'DAIze' || msg.remetente === 'ia') {
+              // Usar logo da marca D&Z (borboleta)
+              avatarContent = `
+                <img src="../../../assets/images/logodz.png" alt="DAIze" 
+                     style="width: 85%; height: 85%; object-fit: contain;" 
+                     onerror="this.parentNode.innerHTML='🦋'; this.parentNode.style.fontSize='1.4rem'">
+              `;
+            } else {
+              avatarContent = remetente.charAt(0).toUpperCase();
+            }
+            const timestamp = new Date(msg.timestamp).toLocaleString('pt-BR', {
+              hour: '2-digit', 
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit'
+            });
+            
+            // Estrutura diferente para admin/IA (avatar à direita) vs cliente (avatar à esquerda)
+            if (msg.remetente === 'admin' || msg.remetente === 'ia') {
+              messageDiv.innerHTML = `
+                <div class="message-wrapper">
+                  <div class="message-header">
+                    <span class="message-sender">${remetente}</span>
+                    <span class="message-time">${timestamp}</span>
                   </div>
-                  <div style="background: ${bgCor}; padding: 1rem; border-radius: 12px; border: 1px solid ${cor}20; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1.4; color: var(--color-dark);">
-                    ${msg.conteudo}
+                  <div class="message-content">
+                    <div class="message-text">${msg.conteudo}</div>
                   </div>
                 </div>
-              </div>
-            `;
+                <div class="message-avatar">${avatarContent}</div>
+              `;
+            } else {
+              messageDiv.innerHTML = `
+                <div class="message-avatar">${avatarContent}</div>
+                <div class="message-wrapper">
+                  <div class="message-header">
+                    <span class="message-sender">${remetente}</span>
+                    <span class="message-time">${timestamp}</span>
+                  </div>
+                  <div class="message-content">
+                    <div class="message-text">${msg.conteudo}</div>
+                  </div>
+                </div>
+              `;
+            }
             
-            container.appendChild(div);
+            container.appendChild(messageDiv);
           });
           
           container.scrollTop = container.scrollHeight;
@@ -602,6 +653,10 @@ try {
           
         } catch (error) {
           console.error('Erro ao carregar mensagens:', error);
+          const container = document.getElementById('mensagens-container');
+          if (container) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #ff0066;">❌ Erro ao carregar mensagens. Verifique o console.</div>';
+          }
         }
       }
       
@@ -682,12 +737,22 @@ try {
       
       // Enviar mensagem admin
       async function enviarMensagemAdmin() {
-        if (!conversaAtiva) return;
+        console.log('🚀 Tentando enviar mensagem, conversa ativa:', conversaAtiva);
+        
+        if (!conversaAtiva) {
+          console.error('❌ Nenhuma conversa ativa');
+          return;
+        }
         
         const input = document.getElementById('admin-mensagem');
         const mensagem = input.value.trim();
         
-        if (!mensagem) return;
+        console.log('📝 Mensagem a enviar:', mensagem);
+        
+        if (!mensagem) {
+          console.warn('⚠️ Mensagem vazia');
+          return;
+        }
         
         try {
           const response = await fetch('../sistema.php?api=1&endpoint=admin&action=send_admin_message', {
@@ -700,16 +765,19 @@ try {
           });
           
           const result = await response.json();
+          console.log('📨 Resposta da API:', result);
           
           if (result.success) {
+            console.log('✅ Mensagem enviada com sucesso');
             input.value = '';
             carregarMensagens(conversaAtiva);
           } else {
+            console.error('❌ Erro da API:', result.error);
             alert('Erro ao enviar mensagem: ' + result.error);
           }
         } catch (error) {
-          console.error('Erro:', error);
-          alert('Erro de conexão');
+          console.error('❌ Erro ao enviar mensagem:', error);
+          alert('Erro de conexão: ' + error.message);
         }
       }
       
@@ -857,6 +925,7 @@ try {
                     document.querySelector('.chat-placeholder').style.display = 'flex';
                     document.getElementById('conversa-ativa').style.display = 'none';
                     conversaAtiva = null;
+                    nomeClienteAtivo = null;
                   }
                 }, 300);
               }
@@ -913,8 +982,39 @@ try {
         }
       }, 30000);
       
+      // Função para gerenciar indicador de scroll
+      function setupScrollIndicator() {
+        const conversationsList = document.querySelector('.conversations-list');
+        const sidebar = document.querySelector('.conversations-sidebar');
+        
+        if (!conversationsList || !sidebar) return;
+        
+        function checkScroll() {
+          const hasScroll = conversationsList.scrollHeight > conversationsList.clientHeight;
+          sidebar.classList.toggle('has-scroll', hasScroll);
+        }
+        
+        // Verificar inicial
+        checkScroll();
+        
+        // Verificar quando há mudanças no conteúdo
+        const observer = new MutationObserver(checkScroll);
+        observer.observe(conversationsList, { childList: true, subtree: true });
+        
+        // Verificar no redimensionamento
+        window.addEventListener('resize', checkScroll);
+        
+        // Adicionar evento de scroll suave
+        conversationsList.addEventListener('scroll', () => {
+          // Opcional: lógica adicional quando o usuário faz scroll
+        });
+      }
+
       // Inicialização e configuração de event listeners
       function inicializarEventListeners() {
+        // Setup do indicador de scroll
+        setupScrollIndicator();
+        
         // Hover effects para conversa items
         document.querySelectorAll('.conversation-item').forEach(item => {
           // Remover listeners existentes primeiro
@@ -1230,6 +1330,33 @@ try {
         }
       }
     </script>
+
+    <style>
+      /* CSS específico para avatar da DAIze */
+      .message-bubble.ia .message-avatar {
+        background: linear-gradient(135deg, #ff6b9d, #c44569) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .message-bubble.ia .message-avatar img {
+        transition: all 0.3s ease;
+      }
+      
+      .message-bubble.ia .message-avatar img:hover {
+        transform: scale(1.1);
+      }
+      
+      /* Fallback emoji styling */
+      .message-bubble.ia .message-avatar:not(:has(img)) {
+        font-size: 1.2rem;
+        background: linear-gradient(135deg, #ff6b9d, #c44569);
+      }
+    </style>
   </body>
 </html>
 
